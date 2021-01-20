@@ -58,10 +58,8 @@ int main( int argc, char **argv ) {
             }
             else
             {
-                // numprocs = num_of_elements_per_process;
                 num_of_elements_per_process = num_of_terms_in_fraction/numprocs;
                 last_chunk_size = num_of_elements_per_process + (num_of_terms_in_fraction%numprocs);
-                // num_of_elements_per_process = (num_of_terms_in_fraction/numprocs) + 1;
             }
         }
         else
@@ -113,9 +111,7 @@ int main( int argc, char **argv ) {
                     );
             }
 
-            // int remaining_elements;
             chunk_beginner_element = (pid * num_of_elements_per_process) + 1;
-            // remaining_elements = (num_of_terms_in_fraction - chunk_beginner_element) + 1;
 
             MPI_Send(
                         &last_chunk_size, //Start
@@ -134,7 +130,6 @@ int main( int argc, char **argv ) {
                         MPI_COMM_WORLD
                     );
         }
-
         
         //Master Process's computation
         for(int num = 1; num <= num_of_elements_per_process; num++) {
@@ -182,14 +177,7 @@ int main( int argc, char **argv ) {
 
         double temporary_sum = 0.0;
         for(int i = 1; i <= num_of_elements_per_process_received; i++) {
-            // if(chunk_beginner_element_received <= num_of_terms_in_fraction)
-            // {
-                temporary_sum += (1/pow(chunk_beginner_element_received,2));
-            // }
-            // else
-            // {
-                // break;
-            // }
+            temporary_sum += (1/pow(chunk_beginner_element_received,2));
             chunk_beginner_element_received++;
         }
 
