@@ -16,6 +16,15 @@
 ###### Given an array of numbers, your task is to return the array in sorted order by implementing parallel quicksort.
 ##### Approach :
 
+Merging :
+1. Create an output array.
+2. Create a min heap of size k and insert 1st element in all the arrays into the heap.
+3. Repeat following steps while priority queue is not empty.
+    a) Remove minimum element from heap (minimum is always at root) and store it in output array.
+    b) Insert next element from the array from which the element is extracted. If the array doesn’t have any more elements, then do nothing.
+
+    The time complexity of heap based merging is O(N Log k) where k is the size of the heap. 
+
 
 ---
 #### Question 3
