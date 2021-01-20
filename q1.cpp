@@ -1,5 +1,4 @@
 /* MPI Program Template */
-
 #include <stdio.h>
 #include <string.h>
 #include "mpi.h"
@@ -11,7 +10,7 @@ typedef long long int ll;
 
 void printResult(double sum)
 {
-    printf("Sum for the series i.e. estimated value of π2/6 rounded oﬀ to six decimal places is : %.6f\n", sum);
+    printf("%.6f\n", sum);
 }
 
 int main( int argc, char **argv ) {
@@ -39,36 +38,71 @@ int main( int argc, char **argv ) {
     and hence done. So this is the msg passing happening in parallel algorithms.
     
     */
-    int num_of_terms_in_fraction = 100;
+
+    freopen(argv[1], "r", stdin);
+    freopen(argv[2], "a", stdout);
+
+    int num_of_terms_in_fraction;
+    cin >> num_of_terms_in_fraction;
+    
     if(rank == 0) { //For the Master/Main process to do its computation and send and receive the computed parts from other slave processes
         double sum = 0.0;
-        int num_of_elements_per_process, chunk_beginner_element;
+        int num_of_elements_per_process, chunk_beginner_element, last_chunk_size;
 
-        if(num_of_terms_in_fraction >= numprocs) {
+        if(num_of_terms_in_fraction >= numprocs)
+        {
             if(num_of_terms_in_fraction%numprocs == 0)
+            {
                 num_of_elements_per_process = num_of_terms_in_fraction/numprocs;
+                last_chunk_size = num_of_elements_per_process;
+            }
             else
             {
-                num_of_elements_per_process = (num_of_terms_in_fraction/numprocs) + 1;
+                // numprocs = num_of_elements_per_process;
+                num_of_elements_per_process = num_of_terms_in_fraction/numprocs;
+                last_chunk_size = num_of_elements_per_process + (num_of_terms_in_fraction%numprocs);
+                // num_of_elements_per_process = (num_of_terms_in_fraction/numprocs) + 1;
             }
         }
-        else { //Handle this case 
-    
+        else
+        { //Handle this case 
+            num_of_elements_per_process = 1;
+            last_chunk_size = 0;
         }
         
         if(numprocs > 1)
         {
             int pid = 1;
             for(pid = 1; pid < numprocs-1 ; pid++) {
+                
                 chunk_beginner_element = (pid * num_of_elements_per_process) + 1;
-                    MPI_Send(
-                        &num_of_elements_per_process, //Start
-                        1, //Count
-                        MPI_INT, //Datatype
-                        pid, //Destination
-                        0, //Tag
-                        MPI_COMM_WORLD //Communicator
-                    );
+
+                    if(pid < num_of_terms_in_fraction)
+                    {
+                        MPI_Send(
+                            &num_of_elements_per_process, //Start
+                            1, //Count
+                            MPI_INT, //Datatype
+                            pid, //Destination
+                            0, //Tag
+                            MPI_COMM_WORLD //Communicator
+                        );
+                    }
+                    else
+                    {
+                        int temp = 0;
+                        // num_of_elements_per_process = 0;
+                        MPI_Send(
+                            &temp, //Start
+                            1, //Count
+                            MPI_INT, //Datatype
+                            pid, //Destination
+                            0, //Tag
+                            MPI_COMM_WORLD //Communicator
+                        );
+                    }
+                    
+                    
                     MPI_Send(
                         &chunk_beginner_element,
                         1,
@@ -79,12 +113,12 @@ int main( int argc, char **argv ) {
                     );
             }
 
-            int remaining_elements;
+            // int remaining_elements;
             chunk_beginner_element = (pid * num_of_elements_per_process) + 1;
-            remaining_elements = (num_of_terms_in_fraction - chunk_beginner_element) + 1;
+            // remaining_elements = (num_of_terms_in_fraction - chunk_beginner_element) + 1;
 
             MPI_Send(
-                        &remaining_elements, //Start
+                        &last_chunk_size, //Start
                         1, //Count
                         MPI_INT, //Datatype
                         pid, //Destination
@@ -173,7 +207,7 @@ int main( int argc, char **argv ) {
     double maxTime;
     MPI_Reduce( &elapsedTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD );
     if ( rank == 0 ) {
-        printf( "Total time (s): %f\n", maxTime );
+        // printf( "Total time (s): %f\n", maxTime );
     }
 
     /* shut down MPI */
