@@ -11,6 +11,7 @@
 #### Implementation Approach
 
 ##### Basic Strategy :
+
 Main/master process will be divided into multiple child processes. Now the master process "sends" the data to the other child/slave processes for their computations. Each process will do their part of computation in parallel. And in the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the msg passing happening in parallel algorithms.
 ---
 #### Question 2 :
