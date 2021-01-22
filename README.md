@@ -10,9 +10,11 @@
 ##### Use the numerical identity that the sum of the reciprocals of the squares of integers converges to π2/6.
 #### Implementation Approach
 
-##### Basic Strategy :
-
-Main/master process will be divided into multiple child processes. Now the master process "sends" the data to the other child/slave processes for their computations. Each process will do their part of computation in parallel. And in the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the msg passing happening in parallel algorithms.
+###### Basic Strategy :
+1. Main/master process will be divided into multiple child processes.
+2. Now the master process "sends" the data to the other child/slave processes for their computations.
+3. Each process will do their part of computation in parallel. 
+4. In the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the msg passing happening in parallel algorithms.
 ---
 #### Question 2 :
 ##### Given an array of numbers, your task is to return the array in sorted order by implementing parallel quicksort.
