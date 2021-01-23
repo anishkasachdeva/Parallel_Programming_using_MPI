@@ -16,6 +16,12 @@
 3. Each process will do their part of computation in parallel.
 4. In the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the message passing happening in parallel algorithms.
 
+###### Implementation Strategy :
+1. The master process sends start number from where each process has start the computation parallelly.
+2. On receiving the start number, the child/slave processes calculate their respective sum and sends back to the master process/
+3. The master process also computes its respective sum until then.
+4. The master process then receives the patial sums from all the other respective processes and computes the final sum. 
+
 ###### Major MPI Commands Used :
 1. MPI_Send
 2. MPI_Recv 
@@ -23,8 +29,6 @@
 #### Question 2 :
 ##### Given an array of numbers, your task is to return the array in sorted order by implementing parallel quicksort.
 #### Implementation Approach
-
-
 ###### Division :
 1. The input array is divided into multiple equal chunks (size of array/number of processes).
 2. Each small array chunk is assigned to a process.

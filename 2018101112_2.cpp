@@ -18,28 +18,30 @@ void swap(int *xp, int *yp)
 
 int partition (int arr[], int low, int high)  
 {  
-    int pivot = arr[high];  
     int i = (low - 1);
-  
-    for (int j = low; j <= high - 1; j++)  
+    int pivot = arr[high];
+
+    for (int j = low; j < high; j++)  
     {  
-        if (arr[j] < pivot)  
+        if (pivot > arr[j])  
         {  
             i++;
             swap(&arr[i], &arr[j]);  
         }  
     }  
     swap(&arr[i + 1], &arr[high]);  
-    return (i + 1);  
+
+    int index = i+1;
+    return index;  
 }  
 
-void quickSort(int arr[], int low, int high)  
+void quick_sort_algorithm(int arr[], int low, int high)  
 {  
     if (low < high)  
     { 
         int pi = partition(arr, low, high);  
-        quickSort(arr, low, pi - 1);  
-        quickSort(arr, pi + 1, high);  
+        quick_sort_algorithm(arr, low, pi - 1);  
+        quick_sort_algorithm(arr, pi + 1, high);  
     }  
 }  
 
@@ -90,18 +92,26 @@ int main(int argc, char **argv )
 
     if(rank == 0) {
         
-        freopen(argv[1], "r", stdin);
-        freopen(argv[2], "a", stdout);
+        //freopen(argv[1], "r", stdin);
+        //freopen(argv[2], "a", stdout);
 
         int size_of_input_array;
-        cin >> size_of_input_array;
+        FILE *file = NULL;
+        
+        file = fopen(argv[1], "r");
+        fscanf(file, "%d", &size_of_input_array);
+
+        //cin >> size_of_input_array;
 
         int unsorted_array[size_of_input_array];
 
         for(int i = 0; i < size_of_input_array; i++)
         {
-            cin >> unsorted_array[i];
+            fscanf(file, "%d", &(unsorted_array[i]));
         }
+        fclose(file);
+           // cin >> unsorted_array[i];
+        //}
 
         int array_size_per_process, last_array_chunk_size;
 
@@ -146,7 +156,7 @@ int main(int argc, char **argv )
             MPI_Send(unsorted_array + (array_size_per_process * pid), last_array_chunk_size, MPI_INT, pid, 0, MPI_COMM_WORLD);
         }
         
-        quickSort(unsorted_array, 0, array_size_per_process-1); //master process's sorting
+        quick_sort_algorithm(unsorted_array, 0, array_size_per_process-1); //master process's sorting
         vector<vector<int> > matrix_of_sorted_arrays;
         
         if(numprocs > 1)
@@ -194,12 +204,16 @@ int main(int argc, char **argv )
         if(v.size() != 0)
             matrix_of_sorted_arrays.push_back(v);
 
-        vector<int>arr_n = mergeSortedArrays(matrix_of_sorted_arrays);
+        vector<int>ans = mergeSortedArrays(matrix_of_sorted_arrays);
 
-        for(int i = 0; i < arr_n.size(); i++)
+
+        file = fopen(argv[2], "w");
+        for(int i = 0; i < ans.size(); i++)
         {
-            cout << arr_n[i] << endl;
+            fprintf(file, "%d ", ans[i]);
+            //cout << arr_n[i] << endl;
         }
+        fclose(file);
     }
     else
     {
@@ -209,7 +223,7 @@ int main(int argc, char **argv )
         {
             int received_array[size_of_received_array];
             MPI_Recv(received_array, size_of_received_array, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-            quickSort(received_array,0,size_of_received_array-1);
+            quick_sort_algorithm(received_array,0,size_of_received_array-1);
             MPI_Send(received_array, size_of_received_array, MPI_INT, 0, 0, MPI_COMM_WORLD);
         }
         

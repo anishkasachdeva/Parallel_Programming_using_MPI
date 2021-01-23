@@ -13,6 +13,7 @@ void printResult(double sum)
     printf("%.6f\n", sum);
 }
 
+
 int main( int argc, char **argv ) {
     
     int rank, numprocs, num_of_elements_per_process_received,chunk_beginner_element_received;
@@ -21,8 +22,8 @@ int main( int argc, char **argv ) {
     MPI_Status status; 
     MPI_Init( &argc, &argv);
 
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &numprocs );
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     
     /*synchronize all processes*/
     MPI_Barrier( MPI_COMM_WORLD );
@@ -31,12 +32,16 @@ int main( int argc, char **argv ) {
     
     if(rank == 0) { //For the Master/Main process to do its computation and send and receive the computed parts from other slave processes
         
-        freopen(argv[1], "r", stdin);
-        freopen(argv[2], "a", stdout);
-
+        //freopen(argv[1], "r", stdin);
+        //freopen(argv[2], "a", stdout);
+       
+        FILE * file = NULL;
         int num_of_terms_in_fraction;
-        cin >> num_of_terms_in_fraction;
+        //cin >> num_of_terms_in_fraction;
 
+        file = fopen(argv[1], "r");
+        fscanf(file, "%d", &num_of_terms_in_fraction);
+        
         double sum = 0.0;
         int num_of_elements_per_process, chunk_beginner_element, last_chunk_size;
 
@@ -90,7 +95,10 @@ int main( int argc, char **argv ) {
                 sum += temporary_sum_received;
             }
         }
-        printResult(sum);
+        file = fopen(argv[2], "w");
+        fprintf(file, "%0.6f", sum);
+        fclose(file);
+        //printResult(sum);
     }
     //For the Child processes to their computations
     else { 
@@ -112,7 +120,7 @@ int main( int argc, char **argv ) {
     double maxTime;
     MPI_Reduce( &elapsedTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD );
     if ( rank == 0 ) {
-        // printf( "Total time (s): %f\n", maxTime );
+        printf( "Total time (s): %f\n", maxTime );
     }
 
     /* shut down MPI */

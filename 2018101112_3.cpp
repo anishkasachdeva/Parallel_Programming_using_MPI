@@ -7,73 +7,118 @@
 using namespace std;
 typedef long long int ll;
 
-// void assign_minimum_color_scheme(int edges)
-// {
-//     for(int i = 0; i < edges; i++)
-//     {
-//         for(int j = 0; j < edges; j++)
-//         {
-
-//         }
-//     }
-// }
-
-
-set<int> generate_greatest_node_among_neighbours(int edges, int node_beginner_value, int nodes_per_process, vector<vector<int> > adj_matrix_lineGraph)
+vector<int> generate_greatest_node_among_neighbours(int edges, int node_beginner_value, int nodes_per_process, int adj_matrix_lineGraph[], int final_coloured_vertices_of_lineGraph[])
 {
     int node_value, neighbour_node_value;
-    set<int>greatest_among_neighbours;
+    vector<int>greatest_among_neighbours;
+
+   // int uncoloured_vertices = edges;
+
     for(int i = node_beginner_value; i < node_beginner_value + nodes_per_process; i++)
     {
-        bool flag = true;
-        node_value = i;
-        for(int j = 0; j < edges; j++)
+        if(final_coloured_vertices_of_lineGraph[i] == 0)
         {
-            neighbour_node_value = j;
-            if(adj_matrix_lineGraph[i][j] == 1)
+            bool flag = true;
+            node_value = i;
+            for(int j = i+1; j < edges; j++)
             {
-                if(neighbour_node_value > node_value)
+                if(final_coloured_vertices_of_lineGraph[j] == 0)
                 {
-                    flag = false;
-                    break;
-                }
+                    neighbour_node_value = j;
+                    if(adj_matrix_lineGraph[i*edges + j] == 1)
+                    {
+                       // cout << "Vertex " << i << " and neighbour " << j << endl;
+                        if(neighbour_node_value > node_value)
+                        {
+                            flag = false;
+                            break;
+                        }
+                    }
+               }
             }
-        }
-        if(flag == true)
-        {
-            greatest_among_neighbours.insert(node_value);
-            //whatever data structure we want to use
-        }
+            if(flag == true)
+            {
+                greatest_among_neighbours.push_back(node_value);
+                //coloured_vertices_of_lineGraph[node_value] = 1;
+                //uncoloured_vertices--;
+            }
+       }
     }
-    return greatest_among_neighbours; 
+    return greatest_among_neighbours;
 }
 
 
-    
-void run_parallel(int numprocs, int rank, int vertices,int edges, vector<vector<int> > adj_matrix_lineGraph)
+void run_parallel(int edges, int numprocs, int rank, int adj_matrix_lineGraph[], int final_coloured_vertices_of_lineGraph[])
 {
-    cout << "Came Here" << rank << endl << endl;
-    int nodes_per_process = vertices/numprocs;
-    int last_process_nodes = nodes_per_process + (vertices%numprocs);
-    
-    int node_beginner_value;
-    
-    //for(int pid = 1; pid < numprocs; pid++)
-    //{
-        set<int>greatest_among_neighbours;
-        node_beginner_value = (rank * nodes_per_process);
+    int nodes_per_process, last_process_nodes, node_beginner_value;
 
-        cout << "node_beginner_value " <<  node_beginner_value << endl;
-        if(rank == numprocs - 1)
+    nodes_per_process = edges/(numprocs);
+    last_process_nodes = nodes_per_process + (edges%(numprocs));
+    if(nodes_per_process==0)nodes_per_process=last_process_nodes=1;
+    node_beginner_value = ((rank) * nodes_per_process);
+    vector<int>greatest_among_neighbours;
+    
+    if(rank<edges)
+    {
+        if(rank == edges - 1 || rank == numprocs - 1)
         {
-            greatest_among_neighbours = generate_greatest_node_among_neighbours(edges,node_beginner_value, last_process_nodes,adj_matrix_lineGraph); 
+            greatest_among_neighbours = generate_greatest_node_among_neighbours(edges,node_beginner_value, last_process_nodes,adj_matrix_lineGraph,final_coloured_vertices_of_lineGraph); 
         }
         else
         {
-            greatest_among_neighbours = generate_greatest_node_among_neighbours(edges,node_beginner_value, nodes_per_process,adj_matrix_lineGraph);
-            //assign_minimum_color_scheme();
+            greatest_among_neighbours = generate_greatest_node_among_neighbours(edges,node_beginner_value, nodes_per_process,adj_matrix_lineGraph,final_coloured_vertices_of_lineGraph); 
         }
-    //}
+    }
+
+    for(int i = 0; i < greatest_among_neighbours.size(); i++)
+    {
+    //    cout << "nodeeeeeeeeeeeee " << greatest_among_neighbours[i] << endl;
+        set<int>minimum_color_checker;
+        int column;
+        for(column = 0; column < edges; column++)
+        {
+    //        cout << "column " << column << endl;
+            if(adj_matrix_lineGraph [greatest_among_neighbours[i] * edges + column ]== 1 && final_coloured_vertices_of_lineGraph[column] > 0)
+            {
+                minimum_color_checker.insert(final_coloured_vertices_of_lineGraph[column]);
+            }
+        }
+
+        for(int color_num = 1; ; color_num++)
+        {
+            if(minimum_color_checker.find(color_num) == minimum_color_checker.end())
+            {
+                final_coloured_vertices_of_lineGraph[greatest_among_neighbours[i]] = color_num;
+                break;
+            }
+        }
+    }
+
+
+
+    
+    if(rank != 0)
+    {
+        MPI_Send(final_coloured_vertices_of_lineGraph,edges,MPI_INT,0,0,MPI_COMM_WORLD);
+    }
+    else
+    {
+
+        for(int pid = 1; pid < numprocs; pid++)
+        {
+            int received_color_array[edges];
+            MPI_Recv(received_color_array, edges, MPI_INT, pid, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            
+            for(int i = 0; i < edges; i++)
+            {
+                if(final_coloured_vertices_of_lineGraph[i] != received_color_array[i])
+                {
+                    final_coloured_vertices_of_lineGraph[i] = max(received_color_array[i], final_coloured_vertices_of_lineGraph[i]);
+                }
+            }
+        }
+    }
+    MPI_Bcast(final_coloured_vertices_of_lineGraph, edges, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 
@@ -93,142 +138,112 @@ int main( int argc, char **argv ) {
     /* write your code here */
 
     int vertices,edges;
-    map<pair<int, int>, int> vertex_to_edge;
-    map<int,pair<int,int>> edge_to_vertex;
-    
+    map<int,pair<int,int> > edge_to_vertex;
+    FILE *file = NULL;
     if(rank == 0)
     {
-        //freopen(argv[1], "r", stdin);
-        //freopen(argv[2], "a", stdout);
-
-        cin >> vertices;
-        cin >> edges;
+        // cin >> vertices;
+        // cin >> edges;
+        file = fopen(argv[1], "r");
+        // cin>>n>>m;
+        fscanf(file, "%d", &vertices);
+        fscanf(file, "%d", &edges);
     }
 
 
     MPI_Bcast(&edges, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&vertices, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
     if(rank == 0)
     {
-        vector<vector<int>> adj_matrix_originalGraph(vertices, vector<int>(vertices, 0));
-        
         int start_node,end_node;
         int edge_number = 0;
         
         for(int i = 0; i < edges; i++)
         {
-            cin >> start_node >> end_node;
-
-
-            vertex_to_edge[{start_node-1,end_node-1}] = edge_number;
+            // cin >> start_node >> end_node;
+            fscanf(file, "%d", &(start_node));
+            fscanf(file, "%d", &(end_node));
             edge_to_vertex[edge_number] = make_pair(start_node-1,end_node-1);
-
-            //adj_matrix_originalGraph[start_node-1][end_node-1] = 1;
-            //adj_matrix_originalGraph[end_node-1][start_node-1] = 1;
-
             edge_number++;
         }
-        // map<int,pair<int,int>>::iterator itr;
-
-        // for(itr = edge_to_vertex.begin(); itr != edge_to_vertex.end(); itr++)
-        // {
-        //     cout << itr->first << " - " << itr->second.first << " , " << itr->second.second << endl;
-        // }
-
-        // cout << "original" << endl << endl;
-        // for(int i = 0; i < vertices; i++)
-        // {
-        //     for(int j = 0; j < vertices; j++)
-        //     {
-        //         cout << adj_matrix_originalGraph[i][j] << " ";
-        //     }
-        //     cout << endl;
-        // }
-        // cout << endl;
-
+        fclose(file);
     }
 
-    vector<vector<int> > adj_matrix_lineGraph(edges , vector<int> (edges, 0));
-        
+    int adj_matrix_lineGraph[edges * edges];
+    
+    for(int i = 0; i < edges; i++)
+    {
+        for(int j = 0; j < edges; j++)
+        {
+            adj_matrix_lineGraph[i*edges + j] = 0;
+        }
+    }
+    
     if(rank == 0)
     {
         for(int i = 0; i <  edges; i++)
         {
             for(int j = i+1; j < edges; j++)
             {
-                //if(i != j)
-                //{
-                    if(edge_to_vertex.find(i) != edge_to_vertex.end() && edge_to_vertex.find(j) != edge_to_vertex.end())
-                    {
-                        //cout << "i is " << i << " and j is " << j << endl;
-                        pair<int,int>one = edge_to_vertex[i];
-                        pair<int,int>two = edge_to_vertex[j];
-                        
-                        int v1,v2,v3,v4;
-                        v1 = one.first;
-                        v2 = one.second;
+                pair<int,int>one = edge_to_vertex[i];
+                pair<int,int>two = edge_to_vertex[j];
+                
+                int v1,v2,v3,v4;
+                v1 = one.first;
+                v2 = one.second;
 
-                        v3 = two.first;
-                        v4 = two.second;
+                v3 = two.first;
+                v4 = two.second;
 
-                        // cout << "first pair" << " ";
-                        // cout << v1 << " " << v2 << endl;
-
-                        // cout << "second pair" << " ";
-                        // cout << v2 << " " << v4 << endl << endl;
-
-                        if(v1 == v3 || v1 == v4 || v2 == v3 || v2 == v4)
-                        {
-                            adj_matrix_lineGraph[i][j] = 1;
-                            adj_matrix_lineGraph[j][i] = 1;
-                        }
-                    }
-                //}
+                if(v1 == v3 || v1 == v4 || v2 == v3 || v2 == v4)
+                {
+                    adj_matrix_lineGraph[i*edges +j] = 1;
+                    adj_matrix_lineGraph[j*edges + i] = 1;
+                }
             }
         }
-        cout << endl;
-        cout << "Line Master Process" << endl << endl;
-        for(int i = 0; i < edges; i++)
-        {
-            for(int j = 0; j < edges; j++)
-            {
-                cout << adj_matrix_lineGraph[i][j] << " ";
-            }
-            cout << endl;
-        }
-        cout << endl;
     }
 
-    for (int i = 0; i < edges; i++)
-        MPI_Bcast(&adj_matrix_lineGraph[i][0], edges*edges, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(adj_matrix_lineGraph, sizeof(adj_matrix_lineGraph)/sizeof(int), MPI_INT, 0, MPI_COMM_WORLD);
     
-    if(rank != 0)
+    int final_coloured_vertices_of_lineGraph[edges] ;
+    for(int i=0;i<edges;i++)final_coloured_vertices_of_lineGraph[i]=0;
+
+    while(1)
     {
-        //cout << edges << endl;
-        //cout << adj_matrix_lineGraph[0][1] << endl;
-        //cout << endl;
-        //cout << "Line" << endl << endl;
+        int uncoloured_vertices = 0;
         for(int i = 0; i < edges; i++)
         {
-            for(int j = 0; j < edges; j++)
+            if(final_coloured_vertices_of_lineGraph[i] == 0)
             {
-                cout << adj_matrix_lineGraph[i][j] << " ";
+                uncoloured_vertices++;
             }
-            cout << endl;
         }
-        cout << endl;
-        
-        run_parallel(numprocs,rank,vertices,edges,adj_matrix_lineGraph);
-        
+        if(uncoloured_vertices == 0)
+        {
+            break;
+        }
+        run_parallel(edges, numprocs, rank, adj_matrix_lineGraph, final_coloured_vertices_of_lineGraph);
     }
 
+    if(rank == 0)
+    {
+        // for(int i = 0; i < edges; i++)
+        // {
+        //     cout << final_coloured_vertices_of_lineGraph[i] << " ";
+        // }
+        int maxi=0;
+        for(int i=0;i<edges;i++)if(final_coloured_vertices_of_lineGraph[i]>maxi)maxi=final_coloured_vertices_of_lineGraph[i];
+        file = fopen(argv[2], "w");
+        fprintf(file, "%d \n", maxi);
+        for (int i = 0; i < edges; i++)
+        fprintf(file, "%d ", final_coloured_vertices_of_lineGraph[i]);
+        fclose(file);
+    }
+    //cout << endl;
+    //}
     
-    // else
-    // {
 
-    // }
-    
     MPI_Barrier( MPI_COMM_WORLD );
     double elapsedTime = MPI_Wtime() - tbeg;
     double maxTime;
