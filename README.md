@@ -66,12 +66,14 @@
 ---
 #### Question 3 :
 ##### Given an undirected graph G, ﬁnd a proper edge coloring of the graph using Delta(G) + 1 colors or fewer. No 2 adjacent edges should have a same color. Delta(G) is the maximum degree of any vertex in G.
-#### Implementation Approach 
 
 #### Steps to run the code
 
 1. mpic++ 2018101112_3.cpp
 2. mpirun -np <number_of_processes> ./a.out <input_file> <output_file>
+
+#### Implementation Approach 
+
 
 ###### Basic Strategy :
 1. The basic strategy is to convert the original graph into a line graph. Given a graph G, its line graph L(G) is a graph such that. Each vertex of L(G) represents an edge of G; and. two vertices of L(G) are adjacent if and only if their corresponding edges share a common endpoint ("are incident") in G.
