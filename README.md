@@ -11,12 +11,12 @@
 #### Implementation Approach
 
 ###### Basic Strategy :
-1. Main/master process will be divided into multiple child processes.
+1. Main/master process will be divided into multiple child processes known as slave processes.
 2. Now the master process "sends" the data to the other child/slave processes for their computations.
-3. Each process will do their part of computation in parallel. 
-4. In the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the msg passing happening in parallel algorithms.
+3. Each process will do their part of computation in parallel.
+4. In the end, master process after completing its own part/computation "receives" the result of respective process's computation and hence done. So this is the message passing happening in parallel algorithms.
 
-###### Major MPI Commands Used:
+###### Major MPI Commands Used :
 1. MPI_Send
 2. MPI_Recv 
 ---
@@ -24,15 +24,16 @@
 ##### Given an array of numbers, your task is to return the array in sorted order by implementing parallel quicksort.
 #### Implementation Approach
 
+
 ###### Division :
 1. The input array is divided into multiple equal chunks (size of array/number of processes).
 2. Each small array chunk is assigned to a process.
 3. Each process parallelly sorts the chunk of array allocated to it.
    
 ###### Sorting :
-1. Algorithm used for sorting is Quick Sort Algorithm.
+1. Quick Sort Algorithm is used for sorting the individual chunk of array.
 ###### Merging :
-1. Create an output array.
+1. Create an output array which will store the final sorted array values.
 2. Create a min heap of size k (using Priority Queue of C++ STL Library) and insert 1st element in all the arrays into the heap.
 3. Repeat following steps while priority queue is not empty.
     1. Remove minimum element from heap (minimum is always at root) and store it in output array.
@@ -41,7 +42,7 @@
     The time complexity of heap based merging is O(N Log k) where k is the size of the min heap. 
 
 
-###### Major MPI Commands Used:
+###### Major MPI Commands Used :
 1. MPI_Send
 2. MPI_Recv 
 
@@ -57,18 +58,18 @@
 
 ###### Implementation Strategy :
 1. Used the Jones - Plassmann Algorithm to implement the vertex coloring algorithm. The algorithm states : 
-    1. Initially assign random numbers to all the vertices.
+    1. Initially assign random numbers to all the vertices. Instead of assigning random numbers, i have assigned numbers from 0 to vertices -1.
     2. Each vertex looks at its neighbours and if it had the highest number, it gets assigned the lowest available color.
     3. Each uncoloured vertex looks at its uncoloured neighbours and gets colored with the lowest available color if has the highest number, and so on.
-2. Initially the adjacency matrix of the Line Graph is broadcasted to all the processes.
+2. Initially the adjacency matrix of the Line Graph is broadcasted to all the processes. The adjancency matrix is built using a map which contains the information about the original graph.
 3. Each process gets assigned equal number of vertices of the graph which they are supposed to color.
 4. Then each process parallelly implements the Jones-Plassann Algorithm and color the vertices.
-5. Then the changes done by each process in the final color array parallelly is sent to the master process to update the final color matrix.
-6. The master process receives individual final color array from all the processes and updates the color matrix completeley i.e. it incorporates all the changes of the colored vertices.
-7. Finally the final color array is broadcasted to all the processes so that there remains consistency globally.
+5. Then the changes done by each process in the final color array parallelly is sent to the process with rank 0 to update the final color array.
+6. The master process receives individual final color array from all the processes and updates the final color array completeley i.e. it incorporates all the changes of the colored vertices.
+7. Finally the final color array is broadcasted to all the processes so that there remains consistency globally i.e. each process gets the latest updated final color array.
 8. This process goes on until all the vertices are colored.
 
-###### Major MPI Commands Used: 
+###### Major MPI Commands Used : 
 1. MPI_Bcast 
 2. MPI_Send
 3. MPI_Recv
